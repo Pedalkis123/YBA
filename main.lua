@@ -12,18 +12,18 @@ local HttpService = game:GetService("HttpService")
 -- Initialize error handling
 local success, errorMsg = pcall(function()
     -- Load modules
-    local Cache = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/SMAX-YBA/main/modules/cache.lua"))()
-    local States = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/SMAX-YBA/main/modules/states.lua"))()
-    local Utils = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/SMAX-YBA/main/modules/utils.lua"))()
-    local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/SMAX-YBA/main/modules/esp.lua"))()
-    local Combat = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/SMAX-YBA/main/modules/combat.lua"))()
-    local Farming = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/SMAX-YBA/main/modules/farming.lua"))()
-    local Teleport = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/SMAX-YBA/main/modules/teleport.lua"))()
-    local PlayerMods = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/SMAX-YBA/main/modules/player.lua"))()
-    local Misc = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/SMAX-YBA/main/modules/misc.lua"))()
+    local Cache = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/cache.lua"))()
+    local States = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/states.lua"))()
+    local Utils = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/utils.lua"))()
+    local ESP = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/esp.lua"))()
+    local Combat = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/combat.lua"))()
+    local Farming = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/farming.lua"))()
+    local Teleport = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/teleport.lua"))()
+    local PlayerMods = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/player.lua"))()
+    local Misc = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/misc.lua"))()
     
     -- Initialize UI
-    local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/YOUR_USERNAME/SMAX-YBA/main/ui/init.lua"))()
+    local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/ui/init.lua"))()
     
     -- Share modules globally
     getgenv().SMAX = {
