@@ -146,4 +146,114 @@ function Tabs.SetupTeleportTab()
         SMAX.Teleport.ToPosition(Vector3.new(100, 0, 100)) -- Replace with actual coordinates
     end)
     
-    -- Add more tele
+    TeleportBox:AddButton("Morioh", function()
+        SMAX.Teleport.ToPosition(Vector3.new(200, 0, 200)) -- Replace with actual coordinates
+    end)
+    
+    TeleportBox:AddButton("Devil's Palm", function()
+        SMAX.Teleport.ToPosition(Vector3.new(300, 0, 300)) -- Replace with actual coordinates
+    end)
+    
+    local PlayerTeleportBox = Tabs.TeleportTab:AddRightGroupbox("Player Teleport")
+    
+    local PlayerDropdown = PlayerTeleportBox:AddDropdown("PlayerToTeleport", {
+        Text = "Select Player",
+        Values = {},
+        Default = 1,
+    })
+    
+    -- Update player list
+    local function UpdatePlayerList()
+        local playerNames = {}
+        for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+            if player ~= game:GetService("Players").LocalPlayer then
+                table.insert(playerNames, player.Name)
+            end
+        end
+        PlayerDropdown:SetValues(playerNames)
+    end
+    
+    UpdatePlayerList()
+    
+    -- Refresh player list button
+    PlayerTeleportBox:AddButton("Refresh Player List", function()
+        UpdatePlayerList()
+    end)
+    
+    -- Teleport to selected player button
+    PlayerTeleportBox:AddButton("Teleport to Player", function()
+        local selectedPlayer = PlayerDropdown.Value
+        if selectedPlayer then
+            SMAX.Teleport.ToPlayer(selectedPlayer)
+        end
+    end)
+end
+
+function Tabs.SetupMiscTab()
+    local MiscBox = Tabs.MiscTab:AddLeftGroupbox("Miscellaneous")
+    
+    MiscBox:AddToggle("StandFarm", {
+        Text = "Auto Stand Farm",
+        Default = false,
+        Tooltip = "Automatically farms for stands",
+        Callback = function(Value)
+            SMAX.States.StandFarm = Value
+        end
+    })
+    
+    MiscBox:AddToggle("ShinySniping", {
+        Text = "Shiny Sniping",
+        Default = false,
+        Tooltip = "Automatically keeps shiny stands",
+        Callback = function(Value)
+            SMAX.States.ShinySniping = Value
+        end
+    })
+    
+    local WebhookBox = Tabs.MiscTab:AddRightGroupbox("Discord Webhook")
+    
+    WebhookBox:AddInput("WebhookURL", {
+        Text = "Webhook URL",
+        Default = "",
+        Placeholder = "https://discord.com/api/webhooks/...",
+    })
+    
+    WebhookBox:AddButton("Test Webhook", function()
+        local url = Options.WebhookURL.Value
+        if url and url ~= "" then
+            SMAX.Utils.SendWebhook(url, {
+                content = "SMAX YBA Webhook Test",
+                embeds = {
+                    {
+                        title = "Test Successful",
+                        description = "Your webhook is working correctly!",
+                        color = 65280, -- Green
+                    }
+                }
+            })
+            Library:Notify("Webhook test sent!")
+        else
+            Library:Notify("Please enter a valid webhook URL first!", 3)
+        end
+    end)
+    
+    WebhookBox:AddToggle("NotifyItems", {
+        Text = "Notify Items",
+        Default = false,
+        Tooltip = "Sends webhook notifications for items",
+        Callback = function(Value)
+            SMAX.States.ItemNotify = Value
+        end
+    })
+    
+    WebhookBox:AddToggle("NotifyStands", {
+        Text = "Notify Stands",
+        Default = false,
+        Tooltip = "Sends webhook notifications for stands",
+        Callback = function(Value)
+            SMAX.States.StandNotify = Value
+        end
+    })
+end
+
+return Tabs
