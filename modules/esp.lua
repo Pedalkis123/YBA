@@ -5,8 +5,8 @@ local Players, RunService, Utils, Cache, States
 local ESPContainer
 
 function ESP.Initialize(PlayersService, RunServiceService, UtilsModule, CacheModule, StatesModule)
-    Players = PlayersService
-    RunService = RunServiceService
+    Players = PlayersService or game:GetService("Players")
+    RunService = RunServiceService or game:GetService("RunService")
     Utils = UtilsModule
     Cache = CacheModule
     States = StatesModule
@@ -68,18 +68,47 @@ function ESP.Outline(character)
             local attachment = Instance.new("Attachment")
             attachment.Parent = outlinePart
             
-            -- Update position when part moves
-            Utils.AddTask(identifier .. "_" .. part.Name, RunService.Heartbeat:Connect(function()
-                if part and part.Parent and outlinePart and outlinePart.Parent then
-                    outlinePart.Position = part.Position
-                    outlinePart.Orientation = part.Orientation
-                else
-                    if outlinePart and outlinePart.Parent then
-                        outlinePart:Destroy()
+            -- Update position when part moves - with error handling
+            pcall(function()
+                if RunService and RunService.Heartbeat then
+                    local connection
+                    connection = RunService.Heartbeat:Connect(function()
+                        pcall(function()
+                            if part and part.Parent and outlinePart and outlinePart.Parent then
+                                outlinePart.Position = part.Position
+                                outlinePart.Orientation = part.Orientation
+                            else
+                                if outlinePart and outlinePart.Parent then
+                                    outlinePart:Destroy()
+                                end
+                                if connection then
+                                    connection:Disconnect()
+                                end
+                            end
+                        end)
+                    end)
+                    
+                    -- Store connection for cleanup
+                    if Utils and typeof(Utils.AddTask) == "function" then
+                        Utils.AddTask(identifier .. "_" .. part.Name, connection)
                     end
-                    Utils.DisconnectTask(identifier .. "_" .. part.Name)
+                else
+                    -- Fallback for when RunService.Heartbeat is not available
+                    spawn(function()
+                        while outlinePart and outlinePart.Parent and part and part.Parent do
+                            pcall(function()
+                                outlinePart.Position = part.Position
+                                outlinePart.Orientation = part.Orientation
+                            end)
+                            wait(0.03) -- Approximately 30 FPS
+                        end
+                        
+                        if outlinePart and outlinePart.Parent then
+                            outlinePart:Destroy()
+                        end
+                    end)
                 end
-            end))
+            end)
         end
         
         -- Create outline for each part in the character
@@ -120,25 +149,79 @@ function ESP.LabelChar(character)
         labelPart.BrickColor = BrickColor.new("White")
         labelPart.Parent = ESPContainer
         
-        -- Update position to stay above character's head
-        Utils.AddTask(identifier, RunService.Heartbeat:Connect(function()
-            if character and character:FindFirstChild("Head") and labelPart and labelPart.Parent then
-                local headPos = character.Head.Position
-                labelPart.Position = headPos + Vector3.new(0, 3, 0)
+        -- Add text label
+        local billboardGui = Instance.new("BillboardGui")
+        billboardGui.Size = UDim2.new(5, 0, 1, 0)
+        billboardGui.Adornee = labelPart
+        billboardGui.AlwaysOnTop = true
+        billboardGui.Parent = labelPart
+        
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = character.Name
+        textLabel.TextColor3 = Color3.new(1, 1, 1)
+        textLabel.TextStrokeTransparency = 0
+        textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        textLabel.Font = Enum.Font.SourceSansBold
+        textLabel.TextScaled = true
+        textLabel.Parent = billboardGui
+        
+        -- Update position to stay above character's head - with error handling
+        pcall(function()
+            if RunService and RunService.Heartbeat then
+                local connection
+                connection = RunService.Heartbeat:Connect(function()
+                    pcall(function()
+                        if character and character:FindFirstChild("Head") and labelPart and labelPart.Parent then
+                            local headPos = character.Head.Position
+                            labelPart.Position = headPos + Vector3.new(0, 3, 0)
+                            
+                            -- Make label face the camera
+                            local camera = workspace.CurrentCamera
+                            if camera then
+                                local cameraPos = camera.CFrame.Position
+                                labelPart.CFrame = CFrame.new(labelPart.Position, Vector3.new(cameraPos.X, labelPart.Position.Y, cameraPos.Z))
+                            end
+                        else
+                            if labelPart and labelPart.Parent then
+                                labelPart:Destroy()
+                            end
+                            if connection then
+                                connection:Disconnect()
+                            end
+                        end
+                    end)
+                end)
                 
-                -- Make label face the camera
-                local camera = workspace.CurrentCamera
-                if camera then
-                    local cameraPos = camera.CFrame.Position
-                    labelPart.CFrame = CFrame.new(labelPart.Position, Vector3.new(cameraPos.X, labelPart.Position.Y, cameraPos.Z))
+                -- Store connection for cleanup
+                if Utils and typeof(Utils.AddTask) == "function" then
+                    Utils.AddTask(identifier, connection)
                 end
             else
-                if labelPart and labelPart.Parent then
-                    labelPart:Destroy()
-                end
-                Utils.DisconnectTask(identifier)
+                -- Fallback for when RunService.Heartbeat is not available
+                spawn(function()
+                    while labelPart and labelPart.Parent and character and character:FindFirstChild("Head") do
+                        pcall(function()
+                            local headPos = character.Head.Position
+                            labelPart.Position = headPos + Vector3.new(0, 3, 0)
+                            
+                            -- Make label face the camera
+                            local camera = workspace.CurrentCamera
+                            if camera then
+                                local cameraPos = camera.CFrame.Position
+                                labelPart.CFrame = CFrame.new(labelPart.Position, Vector3.new(cameraPos.X, labelPart.Position.Y, cameraPos.Z))
+                            end
+                        end)
+                        wait(0.03) -- Approximately 30 FPS
+                    end
+                    
+                    if labelPart and labelPart.Parent then
+                        labelPart:Destroy()
+                    end
+                end)
             end
-        end))
+        end)
     end)
 end
 
@@ -147,34 +230,60 @@ function ESP.EnablePlayerESP()
         ESP.CreateContainer()
         
         for _, player in pairs(Players:GetPlayers()) do
-            if player ~= Utils.GetPlayer() then
-                Utils.AddTask("ESP_" .. player.Name, player.CharacterAdded:Connect(function(character)
-                    ESP.Outline(character)
-                    ESP.LabelChar(character)
-                end))
-            
-                if player.Character then
-                    ESP.Outline(player.Character)
-                    ESP.LabelChar(player.Character)
-                end
+            if player ~= (Utils and Utils.GetPlayer and Utils.GetPlayer() or Players.LocalPlayer) then
+                pcall(function()
+                    if player.CharacterAdded then
+                        local connection = player.CharacterAdded:Connect(function(character)
+                            ESP.Outline(character)
+                            ESP.LabelChar(character)
+                        end)
+                        
+                        if Utils and typeof(Utils.AddTask) == "function" then
+                            Utils.AddTask("ESP_" .. player.Name, connection)
+                        end
+                    end
+                
+                    if player.Character then
+                        ESP.Outline(player.Character)
+                        ESP.LabelChar(player.Character)
+                    end
+                end)
             end
         end
 
-        Utils.AddTask("ESP_PlayerAdded", Players.PlayerAdded:Connect(function(player)
-            Utils.AddTask("ESP_" .. player.Name, player.CharacterAdded:Connect(function(character)
-                ESP.Outline(character)
-                ESP.LabelChar(character)
-            end))
-        end))
+        pcall(function()
+            if Players.PlayerAdded then
+                local connection = Players.PlayerAdded:Connect(function(player)
+                    pcall(function()
+                        if player.CharacterAdded then
+                            local charConnection = player.CharacterAdded:Connect(function(character)
+                                ESP.Outline(character)
+                                ESP.LabelChar(character)
+                            end)
+                            
+                            if Utils and typeof(Utils.AddTask) == "function" then
+                                Utils.AddTask("ESP_" .. player.Name, charConnection)
+                            end
+                        end
+                    end)
+                end)
+                
+                if Utils and typeof(Utils.AddTask) == "function" then
+                    Utils.AddTask("ESP_PlayerAdded", connection)
+                end
+            end
+        end)
     end)
 end
 
 function ESP.DisablePlayerESP()
     pcall(function()
         -- Disconnect all ESP-related tasks
-        for taskName, _ in pairs(Tasks) do
-            if taskName:sub(1, 4) == "ESP_" then
-                Utils.DisconnectTask(taskName)
+        if Utils and typeof(Utils.DisconnectTask) == "function" then
+            for taskName, _ in pairs(Utils.GetTasks and Utils.GetTasks() or {}) do
+                if type(taskName) == "string" and taskName:sub(1, 4) == "ESP_" then
+                    Utils.DisconnectTask(taskName)
+                end
             end
         end
         
@@ -193,6 +302,115 @@ function ESP.Cleanup()
             workspace.SMAX_ESP_Container:Destroy()
         end
     end)
+end
+
+-- Alternative ESP implementation that doesn't rely on RunService.Heartbeat
+function ESP.EnableSimpleESP()
+    pcall(function()
+        ESP.CreateContainer()
+        
+        -- Function to create simple ESP for a character
+        local function createSimpleESP(character)
+            if not character or not character:IsA("Model") then return end
+            
+            -- Create a unique identifier
+            local identifier = character.Name .. "_simple_esp"
+            
+            -- Create a highlight
+            local highlight = Instance.new("Highlight")
+            highlight.Name = identifier
+            highlight.FillColor = Color3.new(1, 0, 0)
+            highlight.OutlineColor = Color3.new(1, 1, 1)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            highlight.Adornee = character
+            highlight.Parent = ESPContainer
+            
+            -- Create a billboard for name
+            if character:FindFirstChild("Head") then
+                local billboardGui = Instance.new("BillboardGui")
+                billboardGui.Name = identifier .. "_name"
+                billboardGui.Size = UDim2.new(0, 200, 0, 50)
+                billboardGui.Adornee = character.Head
+                billboardGui.AlwaysOnTop = true
+                billboardGui.Parent = ESPContainer
+                
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Size = UDim2.new(1, 0, 1, 0)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Text = character.Name
+                nameLabel.TextColor3 = Color3.new(1, 1, 1)
+                nameLabel.TextStrokeTransparency = 0
+                nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+                nameLabel.Font = Enum.Font.SourceSansBold
+                nameLabel.TextScaled = true
+                nameLabel.Parent = billboardGui
+            end
+        end
+        
+        -- Apply ESP to all players
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= (Utils and Utils.GetPlayer and Utils.GetPlayer() or Players.LocalPlayer) then
+                if player.Character then
+                    createSimpleESP(player.Character)
+                end
+                
+                pcall(function()
+                    if player.CharacterAdded then
+                        player.CharacterAdded:Connect(function(character)
+                            createSimpleESP(character)
+                        end)
+                    end
+                end)
+            end
+        end
+        
+        -- Handle new players
+        pcall(function()
+            if Players.PlayerAdded then
+                Players.PlayerAdded:Connect(function(player)
+                    pcall(function()
+                        if player.CharacterAdded then
+                            player.CharacterAdded:Connect(function(character)
+                                createSimpleESP(character)
+                            end)
+                        end
+                    end)
+                end)
+            end
+        end)
+        
+        -- Create a timer to refresh ESP (fallback for no RunService)
+        spawn(function()
+            while workspace:FindFirstChild("SMAX_ESP_Container") do
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= (Utils and Utils.GetPlayer and Utils.GetPlayer() or Players.LocalPlayer) then
+                        if player.Character then
+                            -- Check if ESP exists for this character
+                            local hasESP = false
+                            for _, child in pairs(ESPContainer:GetChildren()) do
+                                if child.Name == player.Name .. "_simple_esp" then
+                                    hasESP = true
+                                    break
+                                end
+                            end
+                            
+                            -- Create ESP if it doesn't exist
+                            if not hasESP then
+                                createSimpleESP(player.Character)
+                            end
+                        end
+                    end
+                end
+                wait(1) -- Update every second
+            end
+        end)
+    end)
+end
+
+-- Add this function to the ESP module
+ESP.GetRunService = function()
+    return RunService
 end
 
 return ESP
