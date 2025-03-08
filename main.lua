@@ -21,7 +21,6 @@ local success, errorMsg = pcall(function()
     local Teleport = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/teleport.lua"))()
     local PlayerMods = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/player.lua"))()
     local Misc = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/modules/misc.lua"))()
-    
     -- Initialize UI
     local UI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Pedalkis123/YBA/main/ui/init.lua"))()
     
